@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta charset="UTF-8">
@@ -26,8 +27,8 @@ padding:10px;
 
 .logo{
 color:red;
-font-weight:bold;
 font-size:22px;
+font-weight:bold;
 margin-right:20px;
 }
 
@@ -150,15 +151,18 @@ async function search(){
 
 let q=document.getElementById("search").value
 
-let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${q}&maxResults=1&key=${API_KEY}`
+let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${q}&maxResults=5&key=${API_KEY}`
 
 let res=await fetch(url)
-
 let data=await res.json()
+
+if(data.items.length>0){
 
 let video=data.items[0]
 
 play(video.id.videoId,video.snippet.title)
+
+}
 
 }
 
@@ -167,7 +171,6 @@ function play(id,title){
 currentVideo=id
 
 document.getElementById("player").innerHTML=
-
 `<iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`
 
 document.getElementById("title").innerText=title
@@ -185,12 +188,13 @@ async function loadSuggested(id){
 let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&relatedToVideoId=${id}&maxResults=10&key=${API_KEY}`
 
 let res=await fetch(url)
-
 let data=await res.json()
 
 let html=""
 
 data.items.forEach(v=>{
+
+if(!v.id.videoId) return
 
 let vid=v.id.videoId
 let thumb=v.snippet.thumbnails.medium.url
@@ -198,7 +202,7 @@ let title=v.snippet.title
 
 html+=`
 
-<div class="suggest-video" onclick="play('${vid}','${title}')">
+<div class="suggest-video" onclick="play('${vid}',\`${title}\`)">
 
 <img src="${thumb}">
 
@@ -273,4 +277,5 @@ document.getElementById("comments").innerHTML=html
 </script>
 
 </body>
+
 </html>
