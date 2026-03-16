@@ -1,3 +1,4 @@
+const API_KEY = "AIzaSyD1OCPoOG0tEmPqlkauPWstNwpMY_b93Ac"
 const express = require("express")
 const multer = require("multer")
 const fs = require("fs")
