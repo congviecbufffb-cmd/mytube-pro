@@ -16,6 +16,27 @@ body{
 background:#0f0f0f;
 color:white;
 font-family:Arial;
+margin:0;
+}
+
+.layout{
+display:flex;
+}
+
+.sidebar{
+width:220px;
+background:#181818;
+padding:15px;
+height:100vh;
+}
+
+.sidebar button{
+width:100%;
+margin-bottom:10px;
+}
+
+.main{
+flex:1;
 }
 
 .header{
@@ -72,6 +93,22 @@ gap:10px;
 
 <body>
 
+<div class="layout">
+
+<div class="sidebar">
+
+<h5>MENU</h5>
+
+<button class="btn btn-dark" onclick="loadRecommended()">🔥 Thịnh hành</button>
+
+<button class="btn btn-dark" onclick="focusSearch()">🔍 Tìm kiếm</button>
+
+<button class="btn btn-dark" onclick="loadHistory()">🕘 Đã xem gần đây</button>
+
+</div>
+
+<div class="main">
+
 <div class="header">
 
 <div class="logo">MyTube</div>
@@ -106,9 +143,51 @@ gap:10px;
 
 </div>
 
+</div>
+
+</div>
+
 <script>
 
 const API_KEY="AIzaSyD1OCPoOG0tEmPqlkauPWstNwpMY_b93Ac"
+
+async function loadRecommended(){
+
+let url=`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=12&regionCode=VN&key=${API_KEY}`
+
+let res=await fetch(url)
+
+let data=await res.json()
+
+let html=""
+
+data.items.forEach(v=>{
+
+let id=v.id
+let thumb=v.snippet.thumbnails.medium.url
+let title=v.snippet.title
+
+html+=`
+
+<div class="col-md-3">
+
+<div class="video-card" onclick="play('${id}')">
+
+<img class="thumbnail" src="${thumb}">
+
+<div class="title">${title}</div>
+
+</div>
+
+</div>
+
+`
+
+})
+
+document.getElementById("videos").innerHTML=html
+
+}
 
 async function search(){
 
@@ -152,6 +231,18 @@ document.getElementById("videos").innerHTML=html
 
 function play(id){
 
+let history = JSON.parse(localStorage.getItem("history") || "[]")
+
+if(!history.includes(id)){
+
+history.unshift(id)
+
+history = history.slice(0,10)
+
+localStorage.setItem("history",JSON.stringify(history))
+
+}
+
 document.getElementById("player").innerHTML=
 
 `<iframe width="100%" height="450"
@@ -159,6 +250,42 @@ src="https://www.youtube.com/embed/${id}"
 frameborder="0" allowfullscreen></iframe>`
 
 window.scrollTo(0,0)
+
+}
+
+function loadHistory(){
+
+let history = JSON.parse(localStorage.getItem("history") || "[]")
+
+let html=""
+
+history.forEach(id=>{
+
+html+=`
+
+<div class="col-md-3">
+
+<div class="video-card" onclick="play('${id}')">
+
+<img class="thumbnail" src="https://img.youtube.com/vi/${id}/mqdefault.jpg">
+
+<div class="title">Video đã xem</div>
+
+</div>
+
+</div>
+
+`
+
+})
+
+document.getElementById("videos").innerHTML=html
+
+}
+
+function focusSearch(){
+
+document.getElementById("search").focus()
 
 }
 
@@ -187,6 +314,8 @@ return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
 return JSON.parse(jsonPayload)
 
 }
+
+loadRecommended()
 
 </script>
 
