@@ -1,33 +1,16 @@
-const API_KEY = "AIzaSyD1OCPoOG0tEmPqlkauPWstNwpMY_b93Ac"
 const express = require("express")
-const multer = require("multer")
-const fs = require("fs")
+const path = require("path")
 
 const app = express()
 
-app.use(express.static("public"))
-app.use("/videos",express.static("videos"))
+app.use(express.static(path.join(__dirname,"public")))
 
-const storage = multer.diskStorage({
-destination:(req,file,cb)=>{
-cb(null,"videos/")
-},
-filename:(req,file,cb)=>{
-cb(null,Date.now()+"-"+file.originalname)
-}
+app.get("/",(req,res)=>{
+res.sendFile(path.join(__dirname,"public","index.html"))
 })
 
-const upload = multer({storage:storage})
+const PORT = process.env.PORT || 3000
 
-app.post("/upload",upload.single("video"),(req,res)=>{
-res.send("Upload OK")
-})
-
-app.get("/videos",(req,res)=>{
-const files = fs.readdirSync("videos")
-res.json(files)
-})
-
-app.listen(3000,()=>{
-console.log("MyTube PRO chạy http://localhost:3000")
+app.listen(PORT,()=>{
+console.log("Server running on "+PORT)
 })
