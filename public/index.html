@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta charset="UTF-8">
 <title>MyTube PRO</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <style>
 
@@ -19,72 +16,104 @@ font-family:Arial;
 margin:0;
 }
 
-.layout{
-display:flex;
-}
-
-.sidebar{
-width:220px;
-background:#181818;
-padding:15px;
-height:100vh;
-}
-
-.sidebar button{
-width:100%;
-margin-bottom:10px;
-}
-
-.main{
-flex:1;
-}
-
 .header{
+position:fixed;
+top:0;
+width:100%;
+height:60px;
 background:#202020;
-padding:15px;
 display:flex;
 align-items:center;
+padding:0 15px;
+z-index:1000;
 }
 
 .logo{
-font-size:24px;
+font-size:22px;
 font-weight:bold;
 color:red;
 margin-right:20px;
 }
 
-.video-card{
+.sidebar{
+position:fixed;
+top:60px;
+left:0;
+width:220px;
+height:100%;
 background:#181818;
-border-radius:10px;
 padding:10px;
-margin-bottom:20px;
-transition:0.3s;
+}
+
+.menu-item{
+padding:10px;
+cursor:pointer;
+border-radius:6px;
+}
+
+.menu-item:hover{
+background:#303030;
+}
+
+.content{
+margin-left:220px;
+margin-top:70px;
+padding:20px;
+}
+
+.video-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+gap:20px;
+}
+
+.video-card{
 cursor:pointer;
 }
 
-.video-card:hover{
-transform:scale(1.05);
-}
-
-.thumbnail{
+.video-card img{
 width:100%;
 border-radius:10px;
 }
 
 .title{
-font-size:15px;
-margin-top:8px;
+margin-top:6px;
+font-size:14px;
 }
 
-.player{
-margin-bottom:30px;
+.player-layout{
+display:grid;
+grid-template-columns:2fr 1fr;
+gap:20px;
 }
 
-.user{
-margin-left:auto;
+.suggest{
 display:flex;
-align-items:center;
-gap:10px;
+margin-bottom:10px;
+cursor:pointer;
+}
+
+.suggest img{
+width:120px;
+border-radius:6px;
+}
+
+.suggest-title{
+margin-left:10px;
+font-size:13px;
+}
+
+.comment{
+background:#181818;
+padding:6px;
+margin-top:6px;
+border-radius:5px;
+}
+
+.shorts{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+gap:15px;
 }
 
 </style>
@@ -92,22 +121,6 @@ gap:10px;
 </head>
 
 <body>
-
-<div class="layout">
-
-<div class="sidebar">
-
-<h5>MENU</h5>
-
-<button class="btn btn-dark" onclick="loadRecommended()">🔥 Thịnh hành</button>
-
-<button class="btn btn-dark" onclick="focusSearch()">🔍 Tìm kiếm</button>
-
-<button class="btn btn-dark" onclick="loadHistory()">🕘 Đã xem gần đây</button>
-
-</div>
-
-<div class="main">
 
 <div class="header">
 
@@ -117,33 +130,20 @@ gap:10px;
 
 <button class="btn btn-danger ms-2" onclick="search()">Search</button>
 
-<div class="user">
-
-<div id="g_id_onload"
- data-client_id="159978427672-ea3r930f5v3nmkd5ptn2rb45p7aadbkj.apps.googleusercontent.com"
- data-callback="handleCredentialResponse">
 </div>
 
-<div class="g_id_signin"
- data-type="standard"
- data-size="medium">
-</div>
+<div class="sidebar">
 
-<div id="user"></div>
+<div class="menu-item" onclick="loadHome()">🏠 Home</div>
+<div class="menu-item" onclick="loadTrending()">🔥 Trending</div>
+<div class="menu-item" onclick="loadShorts()">📱 Shorts</div>
+<div class="menu-item" onclick="loadHistory()">🕘 History</div>
 
 </div>
 
-</div>
+<div class="content">
 
-<div class="container mt-4">
-
-<div id="player" class="player"></div>
-
-<div class="row" id="videos"></div>
-
-</div>
-
-</div>
+<div id="page"></div>
 
 </div>
 
@@ -151,49 +151,118 @@ gap:10px;
 
 const API_KEY="AIzaSyD1OCPoOG0tEmPqlkauPWstNwpMY_b93Ac"
 
-async function loadRecommended(){
+let currentVideo=""
 
-let url=`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=12&regionCode=VN&key=${API_KEY}`
+function renderGrid(videos){
 
-let res=await fetch(url)
+let html='<div class="video-grid">'
 
-let data=await res.json()
+videos.forEach(v=>{
 
-let html=""
-
-data.items.forEach(v=>{
-
-let id=v.id
+let id=v.id.videoId||v.id
 let thumb=v.snippet.thumbnails.medium.url
 let title=v.snippet.title
 
 html+=`
 
-<div class="col-md-3">
-
 <div class="video-card" onclick="play('${id}')">
-
-<img class="thumbnail" src="${thumb}">
-
+<img src="${thumb}">
 <div class="title">${title}</div>
-
-</div>
-
 </div>
 
 `
 
 })
 
-document.getElementById("videos").innerHTML=html
+html+='</div>'
 
+document.getElementById("page").innerHTML=html
+
+}
+
+async function loadHome(){
+
+let url=`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=16&regionCode=VN&key=${API_KEY}`
+
+let res=await fetch(url)
+
+let data=await res.json()
+
+renderGrid(data.items)
+
+}
+
+function loadTrending(){
+loadHome()
 }
 
 async function search(){
 
 let q=document.getElementById("search").value
 
-let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&q=${q}&key=${API_KEY}`
+let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=16&q=${q}&key=${API_KEY}`
+
+let res=await fetch(url)
+
+let data=await res.json()
+
+renderGrid(data.items)
+
+}
+
+async function play(id){
+
+currentVideo=id
+
+let html=`
+
+<div class="player-layout">
+
+<div>
+
+<iframe width="100%" height="450"
+src="https://www.youtube.com/embed/${id}"
+frameborder="0" allowfullscreen></iframe>
+
+<button class="btn btn-danger mt-2" onclick="like()">👍 Like <span id="likes">0</span></button>
+
+<div class="mt-4">
+
+<h5>Comments</h5>
+
+<input id="commentText" class="form-control">
+
+<button class="btn btn-primary mt-2" onclick="addComment()">Send</button>
+
+<div id="comments"></div>
+
+</div>
+
+</div>
+
+<div>
+
+<h5>Suggested</h5>
+
+<div id="suggest"></div>
+
+</div>
+
+</div>
+
+`
+
+document.getElementById("page").innerHTML=html
+
+loadSuggested(id)
+loadLikes()
+loadComments()
+
+}
+
+async function loadSuggested(id){
+
+let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&relatedToVideoId=${id}&maxResults=10&key=${API_KEY}`
 
 let res=await fetch(url)
 
@@ -203,119 +272,110 @@ let html=""
 
 data.items.forEach(v=>{
 
-let id=v.id.videoId
+let vid=v.id.videoId
 let thumb=v.snippet.thumbnails.medium.url
 let title=v.snippet.title
 
 html+=`
 
-<div class="col-md-3">
-
-<div class="video-card" onclick="play('${id}')">
-
-<img class="thumbnail" src="${thumb}">
-
-<div class="title">${title}</div>
-
-</div>
-
+<div class="suggest" onclick="play('${vid}')">
+<img src="${thumb}">
+<div class="suggest-title">${title}</div>
 </div>
 
 `
 
 })
 
-document.getElementById("videos").innerHTML=html
+document.getElementById("suggest").innerHTML=html
 
 }
 
-function play(id){
+function like(){
 
-let history = JSON.parse(localStorage.getItem("history") || "[]")
+let likes=JSON.parse(localStorage.getItem("likes")||"{}")
 
-if(!history.includes(id)){
+likes[currentVideo]=(likes[currentVideo]||0)+1
 
-history.unshift(id)
+localStorage.setItem("likes",JSON.stringify(likes))
 
-history = history.slice(0,10)
-
-localStorage.setItem("history",JSON.stringify(history))
+loadLikes()
 
 }
 
-document.getElementById("player").innerHTML=
+function loadLikes(){
 
-`<iframe width="100%" height="450"
-src="https://www.youtube.com/embed/${id}"
-frameborder="0" allowfullscreen></iframe>`
+let likes=JSON.parse(localStorage.getItem("likes")||"{}")
 
-window.scrollTo(0,0)
+document.getElementById("likes").innerText=likes[currentVideo]||0
 
 }
 
-function loadHistory(){
+function addComment(){
 
-let history = JSON.parse(localStorage.getItem("history") || "[]")
+let text=document.getElementById("commentText").value
+
+if(!text) return
+
+let comments=JSON.parse(localStorage.getItem("comments")||"{}")
+
+if(!comments[currentVideo]) comments[currentVideo]=[]
+
+comments[currentVideo].push(text)
+
+localStorage.setItem("comments",JSON.stringify(comments))
+
+document.getElementById("commentText").value=""
+
+loadComments()
+
+}
+
+function loadComments(){
+
+let comments=JSON.parse(localStorage.getItem("comments")||"{}")
+
+let list=comments[currentVideo]||[]
 
 let html=""
 
-history.forEach(id=>{
+list.forEach(c=>{
+html+=`<div class="comment">${c}</div>`
+})
+
+document.getElementById("comments").innerHTML=html
+
+}
+
+async function loadShorts(){
+
+let url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=shorts&maxResults=10&key=${API_KEY}`
+
+let res=await fetch(url)
+
+let data=await res.json()
+
+let html='<div class="shorts">'
+
+data.items.forEach(v=>{
+
+let id=v.id.videoId
 
 html+=`
-
-<div class="col-md-3">
-
-<div class="video-card" onclick="play('${id}')">
-
-<img class="thumbnail" src="https://img.youtube.com/vi/${id}/mqdefault.jpg">
-
-<div class="title">Video đã xem</div>
-
-</div>
-
-</div>
-
+<iframe width="100%" height="350"
+src="https://www.youtube.com/embed/${id}"
+frameborder="0"></iframe>
 `
 
 })
 
-document.getElementById("videos").innerHTML=html
+html+='</div>'
+
+document.getElementById("page").innerHTML=html
 
 }
 
-function focusSearch(){
-
-document.getElementById("search").focus()
-
-}
-
-function handleCredentialResponse(response){
-
-const data=parseJwt(response.credential)
-
-document.getElementById("user").innerHTML=
-
-`<img src="${data.picture}" style="width:35px;border-radius:50%"> ${data.name}`
-
-}
-
-function parseJwt (token) {
-
-var base64Url = token.split('.')[1]
-
-var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-
-var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-
-return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-
-}).join(''))
-
-return JSON.parse(jsonPayload)
-
-}
-
-loadRecommended()
+loadHome()
 
 </script>
 
